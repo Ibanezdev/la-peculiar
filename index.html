@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Peculiar</title>
+    <meta name="description" content="La Peculiar Art Lab: Un espacio para la exploración artística y creativa.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=Outfit:wght@400;700;800;900&family=Young+Serif&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Special+Elite&family=Permanent+Marker&family=Bungee&family=Homemade+Apple&family=Fredoka+One&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css?v=8.0">
+
+    <!-- SVG TEXTURE FILTERS -->
+    <!-- SVG TEXTURE FILTERS -->
+    <svg style="position: absolute; width: 0; height: 0;" aria-hidden="true">
+        <filter id="rough-texture">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" />
+        </filter>
+        <filter id="wood-texture">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05 0.8" numOctaves="4" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" />
+        </filter>
+        <filter id="cracked-texture">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="5" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
+        </filter>
+        <filter id="ink-bleed">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="blur" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 15 -6" result="ink" />
+        </filter>
+        <filter id="torn-paper">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="5" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" />
+        </filter>
+        <filter id="chalk-effect">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+        </filter>
+        <filter id="balloon-3d">
+            <!-- Smooth balloon heightmap -->
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+            <!-- Diffuse light shading for rounded 3D volume -->
+            <feDiffuseLighting in="blur" lighting-color="#ffffff" surfaceScale="6" diffuseConstant="1.2"
+                result="diffuse">
+                <feDistantLight azimuth="135" elevation="55" />
+            </feDiffuseLighting>
+            <!-- High-end glossy specular highlights (like shiny plastic/glass) -->
+            <feSpecularLighting in="blur" lighting-color="#ffffff" surfaceScale="6" specularConstant="1.8"
+                specularExponent="35" result="specular">
+                <feDistantLight azimuth="135" elevation="55" />
+            </feSpecularLighting>
+            <!-- Blend diffuse shading with the original vibrant color -->
+            <feBlend mode="multiply" in="SourceGraphic" in2="diffuse" result="blend1" />
+            <!-- Composite the glossy specular reflection over the text -->
+            <feComposite in="specular" in2="SourceGraphic" operator="in" result="highlight" />
+            <!-- Screen the glossy highlight over the shaded letter -->
+            <feBlend mode="screen" in="blend1" in2="highlight" result="blend2" />
+            <!-- Soft floating floor shadow -->
+            <feDropShadow dx="3" dy="10" stdDeviation="6" flood-color="#000" flood-opacity="0.22" />
+        </filter>
+    </svg>
+</head>
+
+<body>
+    <!-- LAVA BACKGROUND -->
+    <div class="lava-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+        <div class="grain-overlay"></div>
+    </div>
+
+    <!-- PAINT DOTS CANVAS -->
+    <canvas id="paint-canvas"></canvas>
+
+    <!-- FLOATING TRANSLUCENT SPHERES -->
+    <div class="floating-spheres">
+        <div class="sphere sphere-1"></div>
+        <div class="sphere sphere-2"></div>
+        <div class="sphere sphere-3"></div>
+        <div class="sphere sphere-4"></div>
+        <div class="sphere sphere-5"></div>
+        <div class="sphere sphere-6"></div>
+        <div class="sphere sphere-7"></div>
+        <div class="sphere sphere-8"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <header id="navbar">
+        <div class="header-inner">
+            <div class="logo-container" onclick="scrollToId('inicio')">
+                <img src="logo.png" alt="La Peculiar Logo" class="logo-img">
+                <div class="logo-text-group">
+                    <span class="logo-title">La Peculiar</span>
+                    <span class="logo-subtitle">ART LAB</span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <button onclick="scrollToId('inicio')">INICIO</button>
+                <button onclick="scrollToId('talleres')">TALLERES</button>
+                <button onclick="scrollToId('nosotras')">CONÓCENOS</button>
+                <button onclick="scrollToId('contacto')">CONTACTO</button>
+            </nav>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12" id="menu-line-1" />
+                    <line x1="3" y1="6" x2="21" y2="6" id="menu-line-2" />
+                    <line x1="3" y1="18" x2="21" y2="18" id="menu-line-3" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="mobile-menu" class="mobile-menu hidden">
+            <nav class="mobile-nav-links">
+                <button onclick="mobileNavTo('inicio')">Inicio</button>
+                <button onclick="mobileNavTo('talleres')">Talleres</button>
+                <button onclick="mobileNavTo('nosotras')">Conócenos</button>
+                <button onclick="mobileNavTo('contacto')">Contacto</button>
+            </nav>
+            <div class="mobile-menu-footer">
+                <img src="logo.png" alt="" class="mobile-menu-logo">
+                <p>La Peculiar Art Lab</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- HERO SECTION -->
+        <section id="inicio" class="hero">
+            <div class="ink-splatters left">
+                <svg viewBox="0 0 200 600" width="100%" height="100%" style="overflow: visible;"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- Smooth Liquid Drip Filter (No Sawtooth!) -->
+                        <filter id="gooey-liquid" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" result="blur" />
+                            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
+                                result="goo" />
+                        </filter>
+
+                        <!-- Premium Splatter 1 (Explosive Center with Orbiting Droplets) -->
+                        <g id="pro-splat1">
+                            <path
+                                d="M50,45c6,-8 18,-12 24,-5c5,5 1,14-6,16c11,3 18,11 14,20c-3,8-11,8-16,5c4,11-4,18-14,14c-8,-3-8,-11-6,-18c-10,5-18-3-16-11c1,-8,10,-6,14,-5c-5,-8,0,-18,6,-15z" />
+                            <circle cx="82" cy="32" r="2.8" />
+                            <circle cx="92" cy="58" r="1.8" />
+                            <circle cx="74" cy="82" r="2.2" />
+                            <circle cx="44" cy="78" r="1.5" />
+                            <circle cx="24" cy="52" r="2.5" />
+                            <circle cx="34" cy="30" r="2.0" />
+                        </g>
+
+                        <!-- Premium Splatter 2 (Viscous Center with Tear Drips and Drops) -->
+                        <g id="pro-splat2">
+                            <path
+                                d="M50,35c8,-12 20,-10 18,8c8,-5 15,6 10,14c7,7 1,16-8,12c-3,11-15,14-16,3c-8,7-15,-3-10,-11c-10,-6-4,-18,6,-12c-1,-11,6,-14,6,-14z" />
+                            <path d="M48,68c1,0 2,7 1,10c-1,-3-2,-10-1,-10z" />
+                            <path d="M56,60c0.8,0 1.5,5 0.8,7c-0.8,-2-1.5,-7-0.8,-7z" />
+                            <circle cx="75" cy="22" r="2.2" />
+                            <circle cx="82" cy="44" r="1.5" />
+                            <circle cx="32" cy="28" r="2.5" />
+                            <circle cx="26" cy="48" r="1.8" />
+                            <circle cx="49" cy="82" r="1.2" />
+                        </g>
+
+                        <!-- Premium Brush Stroke (Textured Smudge with Splashes) -->
+                        <g id="pro-stroke">
+                            <path
+                                d="M10,40 c25,-12 65,-15 85,-5c8,4-2,9-15,8c12,4 6,9-8,6c-20,-4-50,-6-62,-1c-8,3-8,-9 12,-15z" />
+                            <path
+                                d="M15,50 c18,-4 42,-2 55,2c4,2 0,5-8,4c8,2 4,6-4,5c-12,-2-32,-3-45,-1c-5,1-5,-7 8,-10z" />
+                            <circle cx="102" cy="44" r="2.2" />
+                            <circle cx="112" cy="50" r="1.3" />
+                            <circle cx="8" cy="55" r="1.8" />
+                        </g>
+
+                        <!-- Standalone Droplet -->
+                        <path id="pro-drop" d="M50,40 c3,-3 6,1 3,6 c-3,5 -6,0 -3,-6 z" />
+                    </defs>
+
+                    <g class="ink-drops">
+                        <!-- LEFT SIDE -->
+                        <g transform="translate(-10, 80) scale(1.6) rotate(-10)" class="drop-wrapper"
+                            style="--delay: 0.1s">
+                            <!-- GOOEY dripping liquid (placed BEHIND the main splatter) -->
+                            <g class="ink-drip-system" style="filter: url(#gooey-liquid);">
+                                <circle cx="50" cy="45" r="7" fill="#1a1a1a" class="drip-anchor" />
+                                <circle cx="50" cy="45" r="4.5" fill="#1a1a1a" class="drip-falling" />
+                            </g>
+                            <!-- SHARP, detailed main splatter (No blur, perfectly sharp) -->
+                            <use href="#pro-stroke" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+
+                        <g transform="translate(10, 240) scale(1.7) rotate(15)" class="drop-wrapper"
+                            style="--delay: 0.3s">
+                            <g class="ink-drip-system" style="filter: url(#gooey-liquid);">
+                                <circle cx="50" cy="50" r="7.5" fill="#1a1a1a" class="drip-anchor" />
+                                <circle cx="50" cy="50" r="5" fill="#1a1a1a" class="drip-falling" />
+                            </g>
+                            <use href="#pro-splat1" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+
+                        <g transform="translate(85, 330) scale(0.9) rotate(45)" class="drop-wrapper"
+                            style="--delay: 0.4s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                        <g transform="translate(55, 370) scale(0.6) rotate(-20)" class="drop-wrapper"
+                            style="--delay: 0.5s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+
+                        <g transform="translate(15, 470) scale(1.5) rotate(-25)" class="drop-wrapper"
+                            style="--delay: 0.2s">
+                            <g class="ink-drip-system" style="filter: url(#gooey-liquid);">
+                                <circle cx="53" cy="48" r="7" fill="#1a1a1a" class="drip-anchor" />
+                                <circle cx="53" cy="48" r="4" fill="#1a1a1a" class="drip-falling" />
+                            </g>
+                            <use href="#pro-splat2" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                        <g transform="translate(70, 540) scale(0.8) rotate(80)" class="drop-wrapper"
+                            style="--delay: 0.4s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="ink-splatters right">
+                <svg viewBox="0 0 200 600" width="100%" height="100%" style="overflow: visible;"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <g class="ink-drops">
+                        <!-- RIGHT SIDE -->
+                        <g transform="translate(50, 40) scale(1.6) rotate(60)" class="drop-wrapper"
+                            style="--delay: 0.2s">
+                            <g class="ink-drip-system" style="filter: url(#gooey-liquid);">
+                                <circle cx="53" cy="48" r="6.5" fill="#1a1a1a" class="drip-anchor" />
+                                <circle cx="53" cy="48" r="4.5" fill="#1a1a1a" class="drip-falling" />
+                            </g>
+                            <use href="#pro-splat2" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                        <g transform="translate(20, 110) scale(0.8) rotate(15)" class="drop-wrapper"
+                            style="--delay: 0.3s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+
+                        <g transform="translate(30, 200) scale(2.0) rotate(-35)" class="drop-wrapper"
+                            style="--delay: 0.1s">
+                            <g class="ink-drip-system" style="filter: url(#gooey-liquid);">
+                                <circle cx="50" cy="50" r="7.5" fill="#1a1a1a" class="drip-anchor" />
+                                <circle cx="50" cy="50" r="4.8" fill="#1a1a1a" class="drip-falling" />
+                            </g>
+                            <use href="#pro-stroke" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+
+                        <g transform="translate(90, 280) scale(1.0) rotate(50)" class="drop-wrapper"
+                            style="--delay: 0.4s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                        <g transform="translate(50, 330) scale(0.7) rotate(-10)" class="drop-wrapper"
+                            style="--delay: 0.5s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+
+                        <g transform="translate(10, 410) scale(1.8) rotate(110)" class="drop-wrapper"
+                            style="--delay: 0.3s">
+                            <g class="ink-drip-system" style="filter: url(#gooey-liquid);">
+                                <circle cx="50" cy="50" r="7" fill="#1a1a1a" class="drip-anchor" />
+                                <circle cx="50" cy="50" r="4.8" fill="#1a1a1a" class="drip-falling" />
+                            </g>
+                            <use href="#pro-splat1" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                        <g transform="translate(90, 510) scale(0.9) rotate(-40)" class="drop-wrapper"
+                            style="--delay: 0.5s">
+                            <use href="#pro-drop" fill="#1a1a1a" class="ink-main-body" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="hero-content">
+                <div class="hero-text-block">
+                    <!-- Header-Matching Violet Paint Brush Stroke behind title -->
+                    <svg class="title-brushstroke" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Main thick brush stroke in exact Header Violet (#a7b0fa) -->
+                        <path
+                            d="M15,55 c40,-25 120,-30 220,-20 c100,10 140,25 150,35 c-20,15 -100,12 -180,5 C125,68 55,75 15,55 z"
+                            fill="#a7b0fa" />
+                        <!-- Secondary highlight stroke in soft periwinkle violet for depth (#c8cdfc) -->
+                        <path
+                            d="M40,65 c50,-12 110,-15 160,-8 c50,7 100,15 140,25 c-25,10 -85,5 -145,0 C135,77 75,82 40,65 z"
+                            fill="#c8cdfc" opacity="0.8" />
+                        <!-- Satellite paint drops in matching violet tones -->
+                        <circle cx="10" cy="62" r="3.5" fill="#a7b0fa" />
+                        <circle cx="385" cy="80" r="2.8" fill="#c8cdfc" />
+                        <circle cx="365" cy="95" r="1.8" fill="#a7b0fa" />
+                    </svg>
+                    <h1 class="hero-title section-title">
+                        Laboratorio de<br>
+                        <span class="brand-font">Artes</span>
+                    </h1>
+                </div>
+                <div class="hero-desc-block">
+                    <p class="hero-description">
+                        Experiencias artísticas <span class="highlight-text">para conectar contigo</span>. Artesanía,
+                        pintura, literatura y creatividad intuitiva en formato online o presencial.
+                    </p>
+                    <a href="#talleres" class="btn btn-primary">Ver Talleres →</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- STORY SECTION -->
+        <section id="nosotras" class="story">
+
+            <div class="story-text">
+                <p class="section-tag">✧ NUESTRA HISTORIA</p>
+                <h2 class="section-title">
+                    El Alma de<br>
+                    <span class="brand-font">La Peculiar</span>
+                </h2>
+                <p class="story-description">
+                    La Peculiar es un laboratorio donde creemos en el poder del arte. Diseñamos talleres en los que
+                    explorar tu lado más creativo, inspirarte y formar parte de una comunidad tan bonita y auténtica
+                    <span class="story-highlight">como tú</span>.
+                </p>
+            </div>
+            <div class="values-list">
+                <div class="value-item">
+                    <span class="value-number color-warm">01</span>
+                    <h3>DISFRUTE</h3>
+                    <p>No importa si ya tienes experiencia o no: ¡nos importa que lo pases bien!</p>
+                </div>
+                <div class="value-item indent-md">
+                    <span class="value-number color-pink">02</span>
+                    <h3>CREATIVIDAD</h3>
+                    <p>Cada taller es una experiencia diseñada para desatar tu potencial.</p>
+                </div>
+                <div class="value-item">
+                    <span class="value-number color-violet">03</span>
+                    <h3>COMUNIDAD</h3>
+                    <p>Construimos un espacio seguro en el que inspirarnos y crecer mutuamente.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- LABORATORIO SECTION -->
+        <section id="laboratorio" class="story">
+
+            <div class="story-text">
+                <p class="section-tag">✧ NUESTRO ESPACIO</p>
+                <h2 class="section-title">
+                    Laboratorio de<br>
+                    <span class="brand-font">Artes</span>
+                </h2>
+                <p class="story-description">
+                    Un lugar donde la experimentación y la expresión se encuentran. Nuestro laboratorio está diseñado
+                    para proporcionarte las herramientas y el ambiente ideal para que desarrolles tu potencial creativo
+                    sin límites ni juicios.
+                </p>
+            </div>
+            <div class="values-list">
+                <div class="value-item">
+                    <span class="value-number color-warm">04</span>
+                    <h3>EXPERIMENTACIÓN</h3>
+                    <p>Prueba nuevas técnicas, materiales y disciplinas en un entorno de libertad absoluta.</p>
+                </div>
+                <div class="value-item indent-md">
+                    <span class="value-number color-pink">05</span>
+                    <h3>EXPRESIÓN</h3>
+                    <p>Encuentra tu propia voz artística a través de la práctica continua y el descubrimiento.</p>
+                </div>
+                <div class="value-item">
+                    <span class="value-number color-violet">06</span>
+                    <h3>APRENDIZAJE</h3>
+                    <p>Aprende haciendo, equivocándote y disfrutando de cada parte del proceso creativo.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- WORKSHOPS SECTION -->
+        <section id="talleres" class="workshops">
+            <div class="workshops-header">
+                <p class="section-tag">✧ PROGRAMA</p>
+                <h2 class="section-title">Talleres <span class="light-italic">activos</span></h2>
+
+                <div id="filters" class="filters">
+                    <!-- Filters will be generated by JS -->
+                </div>
+            </div>
+
+            <!-- PRO MINIMALIST CALENDAR -->
+            <div class="calendar-timeline-wrapper">
+                <h3 class="calendar-header-title">Próximas Fechas</h3>
+                <div id="calendar-timeline" class="calendar-timeline">
+                    <!-- Calendar dates generated by JS -->
+                </div>
+            </div>
+
+            <div class="workshops-container">
+                <button class="nav-arrow prev" onclick="scrollWorkshops(-1)">←</button>
+                <div id="workshops-grid" class="workshops-grid">
+                    <!-- Workshops will be generated by JS -->
+                </div>
+                <button class="nav-arrow next" onclick="scrollWorkshops(1)">→</button>
+            </div>
+
+            <div id="no-results" class="no-results hidden">
+                No hay talleres disponibles con estos filtros ahora mismo.
+            </div>
+        </section>
+
+        <!-- CONTACT SECTION -->
+        <section id="contacto" class="contact">
+            <div class="contact-washi"></div>
+            <h2 class="section-title">Conecta con <span class="brand-font">La Peculiar</span></h2>
+            <div class="contact-simple">
+                <p class="contact-intro">¿Tienes alguna duda, propuesta o simplemente quieres saludarnos? Escríbenos o
+                    conócenos a través de nuestras redes sociales.</p>
+                <div class="contact-links-simple">
+                    <a href="mailto:lapeculiar.artlab@gmail.com" class="contact-link-item">
+                        <span class="icon">✉</span> lapeculiar.artlab@gmail.com
+                    </a>
+                    <a href="https://instagram.com/lapeculiar.artlab" target="_blank" class="contact-link-item">
+                        <span class="icon">◎</span> @lapeculiar.artlab
+                    </a>
+                    <span class="contact-link-item location">
+                        <span class="icon">📍</span> Cádiz · España
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- BOOKING MODAL -->
+        <div id="booking-modal" class="modal-overlay hidden">
+            <div class="modal-content animate-pop">
+                <button class="modal-close" onclick="closeBookingModal()">&times;</button>
+                <p class="modal-tag">Reserva de plaza</p>
+                <h3 id="modal-workshop-title" class="modal-title">Título del Taller</h3>
+
+                <form id="booking-form" class="booking-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Apellidos</label>
+                            <input type="text" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="tel" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Correo Electrónico</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de Pago</label>
+                        <div class="payment-options">
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="Bizum" required>
+                                <span>Bizum</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="PayPal">
+                                <span>PayPal</span>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="Tarjeta">
+                                <span>Tarjeta</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full mt-4">Confirmar Reserva</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ADMIN MODAL -->
+        <div id="admin-modal" class="modal-overlay hidden">
+            <div class="modal-content admin-modal-content animate-pop">
+                <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+                <h3 class="modal-title">Panel de Dirección</h3>
+
+                <div class="admin-tabs">
+                    <button id="tab-new" class="tab-btn active" onclick="switchTab('new')">Añadir Taller</button>
+                    <button id="tab-manage" class="tab-btn" onclick="switchTab('manage')">Gestionar</button>
+                    <button id="tab-clients" class="tab-btn" onclick="switchTab('clients')">Clientes (Excel)</button>
+                </div>
+
+                <!-- Tab: New Workshop -->
+                <div id="content-new" class="tab-content">
+                    <form class="booking-form" onsubmit="addWorkshop(event)">
+                        <div class="form-group">
+                            <label>Título del Taller</label>
+                            <input type="text" id="workshop-title" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Precio (€)</label>
+                                <input type="number" id="workshop-price" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha y Hora</label>
+                                <input type="datetime-local" id="workshop-date" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ubicación / Dirección</label>
+                            <input type="text" id="workshop-location"
+                                placeholder="Ej: Calle Luna 15, Madrid o Enlace Zoom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="workshop-category" required
+                                style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.25rem; padding: 1rem 1.25rem; font-family: var(--font-body); font-size: 0.95rem;">
+                                <option value="TAROT & ASTROLOGÍA">TAROT & ASTROLOGÍA</option>
+                                <option value="CREATIVIDAD INTUITIVA">CREATIVIDAD INTUITIVA</option>
+                                <option value="ARTESANÍA">ARTESANÍA</option>
+                                <option value="PINTURA">PINTURA</option>
+                                <option value="LITERATURA">LITERATURA</option>
+                                <option value="EN FEMENINO">EN FEMENINO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Modalidad</label>
+                            <div style="display: flex; gap: 1.5rem; padding: 0.5rem 0;">
+                                <label
+                                    style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; cursor: pointer;">
+                                    <input type="checkbox" id="check-online" value="ONLINE"
+                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;"> ONLINE
+                                </label>
+                                <label
+                                    style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 800; cursor: pointer;">
+                                    <input type="checkbox" id="check-presencial" value="PRESENCIAL"
+                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;"> PRESENCIAL
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <textarea rows="4"
+                                style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.25rem; padding: 1rem 1.25rem; font-family: var(--font-body); font-size: 0.95rem; resize: none;"
+                                required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full">Publicar Taller</button>
+                    </form>
+                </div>
+
+                <!-- Tab: Manage -->
+                <div id="content-manage" class="tab-content hidden">
+                    <p class="empty-msg">Aquí aparecerá la lista de talleres creados.</p>
+                </div>
+
+                <!-- Tab: Clients -->
+                <div id="content-clients" class="tab-content hidden">
+                    <div class="clients-header">
+                        <p>Total registros: <span id="clients-count">0</span></p>
+                        <button class="btn-export" onclick="exportToExcel()">Descargar Excel</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="clients-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Email / Tel</th>
+                                    <th>Taller</th>
+                                    <th class="text-right">Pago</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-body">
+                                <!-- Bookings will be here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-logo-group">
+                <span class="footer-logo-title">La peculiar</span>
+                <span class="footer-logo-subtitle">art lab</span>
+            </div>
+            <p class="footer-subtext">Laboratorio Artístico Multidisciplinar</p>
+            <div class="footer-copy">
+                <p>© <span id="year"></span> La Peculiar Art Lab</p>
+                <button class="admin-trigger-static" onclick="openAdminModal()">Acceso Privado</button>
+            </div>
+        </footer>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
