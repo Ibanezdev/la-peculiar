@@ -30,6 +30,7 @@ const INITIAL_WORKSHOPS = [
 ];
 
 let activeFilter = 'TODOS';
+let currentSlide = 0; // Control del carrusel
 
 // ELEMENTOS DEL DOM
 const workshopsGrid = document.getElementById('workshops-grid');
@@ -49,11 +50,9 @@ let workshops = []; // Esta lista se llenará con lo que diga el servidor en viv
 // INICIALIZACIÓN CON CONEXIÓN AL SERVIDOR
 async function init() {
     try {
-        // CAMBIO 1: Apuntar a la tubería de /api/talleres en español
         const response = await fetch('/api/talleres');
         const data = await response.json();
         
-        // Mapeamos lo que viene de la base de datos (español) al formato de tu interfaz (inglés) para no romper tus tarjetas fijas
         workshops = data.map(w => ({
             id: w.id,
             title: w.titulo,
@@ -74,6 +73,7 @@ async function init() {
 
     renderFilters();
     renderWorkshops();
+    setupCarouselArrows(); // Activamos las flechas
     
     if (yearSpan) yearSpan.textContent = new Date().getFullYear();
     
@@ -82,7 +82,6 @@ async function init() {
             e.preventDefault();
             const formData = new FormData(bookingForm);
             
-            // Recogemos los datos del cliente para mandarlos al cajón 'reservas' de Neon
             const booking = {
                 taller_id: selectedWorkshop.id,
                 nombre_cliente: `${formData.get('name')} ${formData.get('lastName')}`,
@@ -146,6 +145,8 @@ function renderWorkshops() {
         : workshops.filter(w => w.tags && w.tags.map(t => t.toUpperCase()).includes(activeFilter));
 
     workshopsGrid.innerHTML = '';
+    currentSlide = 0; // Reseteamos el carrusel al filtrar
+    updateCarouselPosition();
     
     if (filtered.length === 0) {
         noResults.classList.remove('hidden');
@@ -157,6 +158,45 @@ function renderWorkshops() {
         });
     }
     renderCalendar();
+}
+
+// CONFIGURACIÓN DE LAS FLECHAS DEL CARRUSEL
+function setupCarouselArrows() {
+    // Buscamos los botones de flecha de la plantilla por su etiqueta o clase común
+    const prevBtn = document.querySelector('.workshops-section button:first-of-type, .carousel-prev, .prev-btn') || document.querySelector('button img[src*="left"]')?.parentElement || document.querySelectorAll('.workshops-section button')[0];
+    const nextBtn = document.querySelector('.workshops-section button:last-of-type, .carousel-next, .next-btn') || document.querySelector('button img[src*="right"]')?.parentElement || document.querySelectorAll('.workshops-section button')[1];
+
+    if (prevBtn) {
+        prevBtn.onclick = () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateCarouselPosition();
+            }
+        };
+    }
+
+    if (nextBtn) {
+        nextBtn.onclick = () => {
+            const cards = workshopsGrid.querySelectorAll('.workshop-card');
+            // Si hay más tarjetas de las que caben en pantalla (3), permitimos avanzar
+            if (currentSlide < cards.length - 3) {
+                currentSlide++;
+                updateCarouselPosition();
+            }
+        };
+    }
+}
+
+// MOVER EL CARRUSEL VISUALMENTE
+function updateCarouselPosition() {
+    if (!workshopsGrid) return;
+    // Forzamos un estilo flex y transición limpia al contenedor si no lo tenía ya en CSS
+    workshopsGrid.style.display = 'flex';
+    workshopsGrid.style.transition = 'transform 0.4s ease-in-out';
+    
+    // Calculamos el desplazamiento basado en el ancho de una tarjeta (aprox 33.33% o un espacio fijo)
+    const cardWidth = 360; // Ajuste estimado por el diseño visual de tus tarjetas
+    workshopsGrid.style.transform = `translateX(-${currentSlide * cardWidth}px)`;
 }
 
 function renderCalendar() {
@@ -196,6 +236,8 @@ function createWorkshopCard(workshop, index) {
     const card = document.createElement('article');
     card.className = 'workshop-card';
     card.style.background = `linear-gradient(135deg, ${color.border}12 0%, #ffffff 70%)`;
+    card.style.flex = '0 0 340px'; // Le asegura un tamaño fijo a cada tarjeta para que no se encojan
+    card.style.marginRight = '20px';
     
     const tape = document.createElement('div');
     tape.className = 'washi-tape';
@@ -233,7 +275,6 @@ window.addWorkshop = async function(event) {
     const category = document.getElementById('workshop-category').value;
     const modalidad = document.getElementById('check-online').checked ? 'ONLINE' : 'PRESENCIAL';
     
-    // Traducimos los nombres para que la base de datos los meta en sus cajones correctos
     const datosTaller = {
         titulo: form.querySelector('input[type="text"]').value,
         precio: parseInt(document.getElementById('workshop-price').value) || 0,
@@ -242,11 +283,10 @@ window.addWorkshop = async function(event) {
         categoria: category,
         modalidad: modalidad,
         descripcion: form.querySelector('textarea').value,
-        imagen_url: 'ink-splash.png' // Cartel por defecto temporal hasta meter Cloudinary
+        imagen_url: 'ink-splash.png'
     };
 
     try {
-        // CAMBIO 2: Fetch a la ruta correcta en español
         const response = await fetch('/api/talleres', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -254,7 +294,6 @@ window.addWorkshop = async function(event) {
         });
         
         if (response.ok) {
-            // CAMBIO 3: Recargar la lista en español
             const resData = await fetch('/api/talleres');
             const data = await resData.json();
             
@@ -299,7 +338,6 @@ function loadWorkshopsToManage() {
 window.deleteWorkshop = async function(id) {
     if (confirm('¿Estás seguro de que quieres eliminar este taller del servidor?')) {
         try {
-            // CAMBIO 4: Ruta de borrado adaptada a español
             const response = await fetch(`/api/talleres/${id}`, { method: 'DELETE' });
             if (response.ok) {
                 workshops = workshops.filter(w => w.id !== id.toString());
