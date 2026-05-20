@@ -30,7 +30,6 @@ const INITIAL_WORKSHOPS = [
 ];
 
 let activeFilter = 'TODOS';
-let currentSlide = 0; // Control del carrusel
 
 // ELEMENTOS DEL DOM
 const workshopsGrid = document.getElementById('workshops-grid');
@@ -73,7 +72,6 @@ async function init() {
 
     renderFilters();
     renderWorkshops();
-    setupCarouselArrows(); // Activamos las flechas
     
     if (yearSpan) yearSpan.textContent = new Date().getFullYear();
     
@@ -145,8 +143,6 @@ function renderWorkshops() {
         : workshops.filter(w => w.tags && w.tags.map(t => t.toUpperCase()).includes(activeFilter));
 
     workshopsGrid.innerHTML = '';
-    currentSlide = 0; // Reseteamos el carrusel al filtrar
-    updateCarouselPosition();
     
     if (filtered.length === 0) {
         noResults.classList.remove('hidden');
@@ -158,45 +154,6 @@ function renderWorkshops() {
         });
     }
     renderCalendar();
-}
-
-// CONFIGURACIÓN DE LAS FLECHAS DEL CARRUSEL
-function setupCarouselArrows() {
-    // Buscamos los botones de flecha de la plantilla por su etiqueta o clase común
-    const prevBtn = document.querySelector('.workshops-section button:first-of-type, .carousel-prev, .prev-btn') || document.querySelector('button img[src*="left"]')?.parentElement || document.querySelectorAll('.workshops-section button')[0];
-    const nextBtn = document.querySelector('.workshops-section button:last-of-type, .carousel-next, .next-btn') || document.querySelector('button img[src*="right"]')?.parentElement || document.querySelectorAll('.workshops-section button')[1];
-
-    if (prevBtn) {
-        prevBtn.onclick = () => {
-            if (currentSlide > 0) {
-                currentSlide--;
-                updateCarouselPosition();
-            }
-        };
-    }
-
-    if (nextBtn) {
-        nextBtn.onclick = () => {
-            const cards = workshopsGrid.querySelectorAll('.workshop-card');
-            // Si hay más tarjetas de las que caben en pantalla (3), permitimos avanzar
-            if (currentSlide < cards.length - 3) {
-                currentSlide++;
-                updateCarouselPosition();
-            }
-        };
-    }
-}
-
-// MOVER EL CARRUSEL VISUALMENTE
-function updateCarouselPosition() {
-    if (!workshopsGrid) return;
-    // Forzamos un estilo flex y transición limpia al contenedor si no lo tenía ya en CSS
-    workshopsGrid.style.display = 'flex';
-    workshopsGrid.style.transition = 'transform 0.4s ease-in-out';
-    
-    // Calculamos el desplazamiento basado en el ancho de una tarjeta (aprox 33.33% o un espacio fijo)
-    const cardWidth = 360; // Ajuste estimado por el diseño visual de tus tarjetas
-    workshopsGrid.style.transform = `translateX(-${currentSlide * cardWidth}px)`;
 }
 
 function renderCalendar() {
@@ -236,8 +193,6 @@ function createWorkshopCard(workshop, index) {
     const card = document.createElement('article');
     card.className = 'workshop-card';
     card.style.background = `linear-gradient(135deg, ${color.border}12 0%, #ffffff 70%)`;
-    card.style.flex = '0 0 340px'; // Le asegura un tamaño fijo a cada tarjeta para que no se encojan
-    card.style.marginRight = '20px';
     
     const tape = document.createElement('div');
     tape.className = 'washi-tape';
@@ -347,69 +302,3 @@ window.deleteWorkshop = async function(id) {
             }
         } catch (error) {
             console.error("Error al eliminar:", error);
-        }
-    }
-};
-
-window.switchTab = function(tabName) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-    
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-    document.getElementById(`content-${tabName}`).classList.remove('hidden');
-    
-    if (tabName === 'clients') loadBookingsToTable();
-    if (tabName === 'manage') loadWorkshopsToManage();
-    if (tabName === 'new') {
-        const form = document.querySelector('#content-new form');
-        if (form) form.onsubmit = window.addWorkshop;
-    }
-};
-
-function loadBookingsToTable() {
-    const bookings = JSON.parse(localStorage.getItem('lapeculiar_bookings') || '[]');
-    clientsCount.textContent = bookings.length;
-    
-    clientsBody.innerHTML = bookings.length > 0 
-        ? bookings.map(b => `
-            <tr>
-                <td>${b.name} ${b.lastName}</td>
-                <td>${b.email} • ${b.phone}</td>
-                <td>${b.workshopTitle}</td>
-                <td>${b.paymentMethod}</td>
-            </tr>
-        `).join('')
-        : '<tr><td colspan="4">No hay reservas todavía.</td></tr>';
-}
-
-function renderFilters() {
-    filtersContainer.innerHTML = '';
-    const allTags = new Set(['TODOS']);
-    workshops.forEach(w => {
-        if (w.tags) w.tags.forEach(t => allTags.add(t.toUpperCase()));
-    });
-
-    Array.from(allTags).forEach(tag => {
-        const btn = document.createElement('button');
-        btn.className = `filter-btn ${activeFilter === tag ? 'active' : ''}`;
-        btn.textContent = tag;
-        btn.onclick = () => {
-            activeFilter = tag;
-            renderFilters();
-            renderWorkshops();
-        };
-        filtersContainer.appendChild(btn);
-    });
-}
-
-window.scrollToId = function(id) {
-    const element = document.getElementById(id);
-    if (element) element.scrollIntoView({ behavior: 'smooth' });
-};
-
-window.toggleMobileMenu = function() {
-    const menu = document.getElementById('mobile-menu');
-    menu.classList.toggle('hidden');
-};
-
-init();
