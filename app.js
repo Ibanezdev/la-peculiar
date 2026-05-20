@@ -49,10 +49,21 @@ let workshops = []; // Esta lista se llenará con lo que diga el servidor en viv
 // INICIALIZACIÓN CON CONEXIÓN AL SERVIDOR
 async function init() {
     try {
-        const response = await fetch('/api/workshops');
-        workshops = await response.json();
+        // CAMBIO 1: Apuntar a la tubería de /api/talleres en español
+        const response = await fetch('/api/talleres');
+        const data = await response.json();
         
-        // Si es la primera vez y el servidor está vacío, le metemos los 3 básicos de prueba
+        // Mapeamos lo que viene de la base de datos (español) al formato de tu interfaz (inglés) para no romper tus tarjetas fijas
+        workshops = data.map(w => ({
+            id: w.id,
+            title: w.titulo,
+            description: w.descripcion,
+            price: w.precio,
+            date: w.fecha,
+            location: w.direccion,
+            tags: Array.isArray(w.categoria) ? w.categoria : [w.categoria, w.modalidad].filter(Boolean)
+        }));
+        
         if (workshops.length === 0) {
             workshops = [...INITIAL_WORKSHOPS];
         }
@@ -67,25 +78,36 @@ async function init() {
     if (yearSpan) yearSpan.textContent = new Date().getFullYear();
     
     if (bookingForm) {
-        bookingForm.onsubmit = (e) => {
+        bookingForm.onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(bookingForm);
+            
+            // Recogemos los datos del cliente para mandarlos al cajón 'reservas' de Neon
             const booking = {
-                name: formData.get('name'),
-                lastName: formData.get('lastName'),
-                phone: formData.get('phone'),
-                email: formData.get('email'),
-                paymentMethod: formData.get('payment'),
-                workshopId: selectedWorkshop.id,
-                workshopTitle: selectedWorkshop.title,
-                date: new Date().toISOString()
+                taller_id: selectedWorkshop.id,
+                nombre_cliente: `${formData.get('name')} ${formData.get('lastName')}`,
+                email_cliente: formData.get('email'),
+                telefono_cliente: formData.get('phone')
             };
 
-            const existing = JSON.parse(localStorage.getItem('lapeculiar_bookings') || '[]');
-            localStorage.setItem('lapeculiar_bookings', JSON.stringify([...existing, booking]));
-            
-            closeBookingModal();
-            alert('¡Reserva realizada con éxito!');
+            try {
+                const response = await fetch('/api/reservas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(booking)
+                });
+
+                if (response.ok) {
+                    closeBookingModal();
+                    alert('¡Reserva realizada con éxito y guardada en Neon!');
+                    loadBookingsToTable();
+                } else {
+                    alert('Hubo un problema al guardar tu reserva.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error al conectar con el servidor.');
+            }
         };
     }
 }
@@ -121,7 +143,7 @@ window.closeAdminModal = function() {
 function renderWorkshops() {
     const filtered = activeFilter === 'TODOS' 
         ? workshops 
-        : workshops.filter(w => w.tags && w.tags.includes(activeFilter));
+        : workshops.filter(w => w.tags && w.tags.map(t => t.toUpperCase()).includes(activeFilter));
 
     workshopsGrid.innerHTML = '';
     
@@ -130,7 +152,6 @@ function renderWorkshops() {
     } else {
         noResults.classList.add('hidden');
         
-        // Render normal de las tarjetas dinámicas
         filtered.forEach((w, index) => {
             workshopsGrid.appendChild(createWorkshopCard(w, index));
         });
@@ -148,9 +169,9 @@ function renderCalendar() {
 
     sortedWorkshops.forEach((w) => {
         const dateObj = new Date(w.date);
-        const day = dateObj.getDate().toString().padStart(2, '0');
-        const month = months[dateObj.getMonth()];
-        const status = w.tags && w.tags.includes('PRESENCIAL') ? 'Presencial' : 'Online';
+        const day = isNaN(dateObj.getTime()) ? '00' : dateObj.getDate().toString().padStart(2, '0');
+        const month = isNaN(dateObj.getTime()) ? 'MIN' : months[dateObj.getMonth()];
+        const status = w.tags && w.tags.includes('ONLINE') ? 'Online' : 'Presencial';
 
         calendarContainer.innerHTML += `
             <div class="cal-date-card" onclick="openBookingModal('${w.id}')">
@@ -181,12 +202,10 @@ function createWorkshopCard(workshop, index) {
     tape.style.backgroundColor = color.border;
     card.appendChild(tape);
     
-    const formattedDate = new Date(workshop.date).toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'long',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    const dateObj = new Date(workshop.date);
+    const formattedDate = isNaN(dateObj.getTime()) 
+        ? workshop.date 
+        : dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
     card.innerHTML = `
         <div class="card-tags">
@@ -212,35 +231,48 @@ window.addWorkshop = async function(event) {
     const form = event.target;
     
     const category = document.getElementById('workshop-category').value;
-    const tags = [category];
-    if (document.getElementById('check-online').checked) tags.push('ONLINE');
-    if (document.getElementById('check-presencial').checked) tags.push('PRESENCIAL');
+    const modalidad = document.getElementById('check-online').checked ? 'ONLINE' : 'PRESENCIAL';
     
+    // Traducimos los nombres para que la base de datos los meta en sus cajones correctos
     const datosTaller = {
-        title: form.querySelector('input[type="text"]').value,
-        price: document.getElementById('workshop-price').value,
-        date: document.getElementById('workshop-date').value,
-        location: document.getElementById('workshop-location').value,
-        tags: tags,
-        description: form.querySelector('textarea').value
+        titulo: form.querySelector('input[type="text"]').value,
+        precio: parseInt(document.getElementById('workshop-price').value) || 0,
+        fecha: document.getElementById('workshop-date').value,
+        direccion: document.getElementById('workshop-location').value,
+        categoria: category,
+        modalidad: modalidad,
+        descripcion: form.querySelector('textarea').value,
+        imagen_url: 'ink-splash.png' // Cartel por defecto temporal hasta meter Cloudinary
     };
 
     try {
-        const response = await fetch('/api/workshops', {
+        // CAMBIO 2: Fetch a la ruta correcta en español
+        const response = await fetch('/api/talleres', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosTaller)
         });
         
         if (response.ok) {
-            const resData = await fetch('/api/workshops');
-            workshops = await resData.json();
+            // CAMBIO 3: Recargar la lista en español
+            const resData = await fetch('/api/talleres');
+            const data = await resData.json();
+            
+            workshops = data.map(w => ({
+                id: w.id,
+                title: w.titulo,
+                description: w.descripcion,
+                price: w.precio,
+                date: w.fecha,
+                location: w.direccion,
+                tags: [w.categoria, w.modalidad].filter(Boolean)
+            }));
             
             renderWorkshops();
             renderFilters();
             form.reset();
             switchTab('manage');
-            alert('¡Taller publicado con éxito en el servidor!');
+            alert('¡Taller publicado con éxito en Neon!');
         }
     } catch (error) {
         alert('Error al conectar con el servidor.');
@@ -267,7 +299,8 @@ function loadWorkshopsToManage() {
 window.deleteWorkshop = async function(id) {
     if (confirm('¿Estás seguro de que quieres eliminar este taller del servidor?')) {
         try {
-            const response = await fetch(`/api/workshops/${id}`, { method: 'DELETE' });
+            // CAMBIO 4: Ruta de borrado adaptada a español
+            const response = await fetch(`/api/talleres/${id}`, { method: 'DELETE' });
             if (response.ok) {
                 workshops = workshops.filter(w => w.id !== id.toString());
                 renderWorkshops();
